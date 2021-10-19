@@ -33,6 +33,7 @@ export function initLifecycle (vm: Component) {
   const options = vm.$options
 
   // locate first non-abstract parent
+  // 保存当前 vm 的父实例并把自己添加到父实例的 $children
   let parent = options.parent
   if (parent && !options.abstract) {
     while (parent.$options.abstract && parent.$parent) {
@@ -60,8 +61,8 @@ export function lifecycleMixin (Vue: Class<Component>) {
     const vm: Component = this
     const prevEl = vm.$el
     const prevVnode = vm._vnode
-    const restoreActiveInstance = setActiveInstance(vm)
-    vm._vnode = vnode
+    const restoreActiveInstance = setActiveInstance(vm) // 设置 vm 为当前上下文实例
+    vm._vnode = vnode // vm._vnode.parent == vm.$vnode
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
     if (!prevVnode) {
@@ -71,6 +72,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
       // updates
       vm.$el = vm.__patch__(prevVnode, vnode)
     }
+    // 所有子树的 patch 完成以后, 恢复父实例
     restoreActiveInstance()
     // update __vue__ reference
     if (prevEl) {
@@ -137,7 +139,13 @@ export function lifecycleMixin (Vue: Class<Component>) {
     }
   }
 }
-
+/**
+ * 
+ * @param {*} vm 
+ * @param {*} el 可能是 undefined 
+ * @param {*} hydrating 
+ * @returns 
+ */
 export function mountComponent (
   vm: Component,
   el: ?Element,
@@ -165,7 +173,7 @@ export function mountComponent (
     }
   }
   callHook(vm, 'beforeMount')
-
+  // 组件更新方法
   let updateComponent
   /* istanbul ignore if */
   if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
@@ -176,7 +184,7 @@ export function mountComponent (
       const endTag = `vue-perf-end:${id}`
 
       mark(startTag)
-      const vnode = vm._render()
+      const vnode = vm._render() // _render -> createElement -> vnode
       mark(endTag)
       measure(`vue ${name} render`, startTag, endTag)
 
@@ -187,16 +195,17 @@ export function mountComponent (
     }
   } else {
     updateComponent = () => {
-      vm._update(vm._render(), hydrating)
+      vm._update(vm._render(), hydrating) // _render -> vnode -> _update -> DOM
     }
   }
 
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+  // 先实例化一个渲染 watcher
   new Watcher(vm, updateComponent, noop, {
     before () {
-      if (vm._isMounted && !vm._isDestroyed) {
+      if (vm._isMounted && !vm._isDestroyed) { // 更新
         callHook(vm, 'beforeUpdate')
       }
     }

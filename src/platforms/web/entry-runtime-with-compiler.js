@@ -13,7 +13,7 @@ const idToTemplate = cached(id => {
   const el = query(id)
   return el && el.innerHTML
 })
-
+// 缓存原型上的 $mount
 const mount = Vue.prototype.$mount
 Vue.prototype.$mount = function (
   el?: string | Element,
@@ -22,6 +22,7 @@ Vue.prototype.$mount = function (
   el = el && query(el)
 
   /* istanbul ignore if */
+  // el 不能挂载到 body, html 这样的根节点上
   if (el === document.body || el === document.documentElement) {
     process.env.NODE_ENV !== 'production' && warn(
       `Do not mount Vue to <html> or <body> - mount to normal elements instead.`
@@ -31,6 +32,7 @@ Vue.prototype.$mount = function (
 
   const options = this.$options
   // resolve template/el and convert to render function
+  // 没有 render 函数, 把 el/template 转换成 render
   if (!options.render) {
     let template = options.template
     if (template) {
@@ -79,6 +81,7 @@ Vue.prototype.$mount = function (
       }
     }
   }
+  // 调用原先原型上的 $mount 方法挂载。
   return mount.call(this, el, hydrating)
 }
 

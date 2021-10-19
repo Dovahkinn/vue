@@ -7,7 +7,7 @@ const terser = require('terser')
 if (!fs.existsSync('dist')) {
   fs.mkdirSync('dist')
 }
-
+// 读取配置
 let builds = require('./config').getAllBuilds()
 
 // filter builds via command line arg

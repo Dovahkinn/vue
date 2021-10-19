@@ -24,11 +24,13 @@ const weexFactoryPlugin = {
     return '}'
   }
 }
-
+// 别名配置
 const aliases = require('./alias')
 const resolve = p => {
+  // 取路径中的第一个 / 前的目录作为别名
   const base = p.split('/')[0]
   if (aliases[base]) {
+    // 别名对应的 src/ 目录 + 文件路径
     return path.resolve(aliases[base], p.slice(base.length + 1))
   } else {
     return path.resolve(__dirname, '../', p)
@@ -36,7 +38,7 @@ const resolve = p => {
 }
 
 const builds = {
-  // Runtime only (CommonJS). Used by bundlers e.g. Webpack & Browserify
+  // Runtime only (CommonJS). Used by bundlers e.g. Webpack & Browserify 只包含运行时, 体积更小
   'web-runtime-cjs-dev': {
     entry: resolve('web/entry-runtime.js'),
     dest: resolve('dist/vue.runtime.common.dev.js'),
@@ -51,7 +53,7 @@ const builds = {
     env: 'production',
     banner
   },
-  // Runtime+compiler CommonJS build (CommonJS)
+  // Runtime+compiler CommonJS build (CommonJS) Vue的 template 使用了字符串, 需要在客户端编译 template -> render
   'web-full-cjs-dev': {
     entry: resolve('web/entry-runtime-with-compiler.js'),
     dest: resolve('dist/vue.common.dev.js'),

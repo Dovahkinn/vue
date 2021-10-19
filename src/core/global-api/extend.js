@@ -21,7 +21,7 @@ export function initExtend (Vue: GlobalAPI) {
     const Super = this
     const SuperId = Super.cid
     const cachedCtors = extendOptions._Ctor || (extendOptions._Ctor = {})
-    if (cachedCtors[SuperId]) {
+    if (cachedCtors[SuperId]) { // 缓存, 避免重复构造
       return cachedCtors[SuperId]
     }
 
@@ -33,6 +33,7 @@ export function initExtend (Vue: GlobalAPI) {
     const Sub = function VueComponent (options) {
       this._init(options)
     }
+    // 原型继承
     Sub.prototype = Object.create(Super.prototype)
     Sub.prototype.constructor = Sub
     Sub.cid = cid++

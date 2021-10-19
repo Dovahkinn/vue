@@ -38,7 +38,7 @@ const componentVNodeHooks = {
     if (
       vnode.componentInstance &&
       !vnode.componentInstance._isDestroyed &&
-      vnode.data.keepAlive
+      vnode.data.keepAlive // ?
     ) {
       // kept-alive components, treat as a patch
       const mountedNode: any = vnode // work around flow
@@ -108,12 +108,12 @@ export function createComponent (
   if (isUndef(Ctor)) {
     return
   }
-
-  const baseCtor = context.$options._base
+  // 构造子类构造函数
+  const baseCtor = context.$options._base // _init: $options = merge(Vue.options, options, ...)
 
   // plain options object: turn it into a constructor
-  if (isObject(Ctor)) {
-    Ctor = baseCtor.extend(Ctor)
+  if (isObject(Ctor)) { // 组件对象
+    Ctor = baseCtor.extend(Ctor) // global-api:   Vue.options._base = Vue
   }
 
   // if at this stage it's not a constructor or an async component factory,
@@ -182,15 +182,15 @@ export function createComponent (
     }
   }
 
-  // install component management hooks onto the placeholder node
+  // install component management hooks onto the placeholder node 安装 data 中的组件钩子
   installComponentHooks(data)
 
-  // return a placeholder vnode
+  // return a placeholder vnode 创建一个 VNode
   const name = Ctor.options.name || tag
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
-    data, undefined, undefined, undefined, context,
-    { Ctor, propsData, listeners, tag, children },
+    data, undefined, undefined, undefined, context, // data, children, text, elm, context
+    { Ctor, propsData, listeners, tag, children }, // componentOptions
     asyncFactory
   )
 
@@ -222,7 +222,7 @@ export function createComponentInstanceForVnode (
     options.render = inlineTemplate.render
     options.staticRenderFns = inlineTemplate.staticRenderFns
   }
-  return new vnode.componentOptions.Ctor(options)
+  return new vnode.componentOptions.Ctor(options) // 调用子组件的构造函数
 }
 
 function installComponentHooks (data: VNodeData) {
@@ -231,8 +231,8 @@ function installComponentHooks (data: VNodeData) {
     const key = hooksToMerge[i]
     const existing = hooks[key]
     const toMerge = componentVNodeHooks[key]
-    if (existing !== toMerge && !(existing && existing._merged)) {
-      hooks[key] = existing ? mergeHook(toMerge, existing) : toMerge
+    if (existing !== toMerge && !(existing && existing._merged)) { // data.hook 中存在某个钩子
+      hooks[key] = existing ? mergeHook(toMerge, existing) : toMerge // 存在钩子则合并: 一次执行两个钩子函数
     }
   }
 }
