@@ -96,9 +96,10 @@ export function _createElement (
     data.scopedSlots = { default: children[0] }
     children.length = 0
   }
+  // 规范化 children, 最终得到一个树
   if (normalizationType === ALWAYS_NORMALIZE) {
     children = normalizeChildren(children)
-  } else if (normalizationType === SIMPLE_NORMALIZE) {
+  } else if (normalizationType === SIMPLE_NORMALIZE) { // render 是编译生成的
     children = simpleNormalizeChildren(children)
   }
   let vnode, ns
@@ -118,7 +119,7 @@ export function _createElement (
         config.parsePlatformTagName(tag), data, children,
         undefined, undefined, context
       )
-    } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) { // 已注册组件
+    } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) { // 已注册组件的构造函数
       // component
       vnode = createComponent(Ctor, data, context, children, tag)
     } else { // 未知元素

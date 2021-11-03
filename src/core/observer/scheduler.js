@@ -23,7 +23,7 @@ let flushing = false
 let index = 0
 
 /**
- * Reset the scheduler's state.
+ * Reset the scheduler's state. 控制变量恢复到初始值, 清空 watcher 队列
  */
 function resetSchedulerState () {
   index = queue.length = activatedChildren.length = 0
@@ -73,18 +73,19 @@ function flushSchedulerQueue () {
   flushing = true
   let watcher, id
 
-  // Sort queue before flush.
+  // Sort queue before flush. // 队列排序
   // This ensures that:
   // 1. Components are updated from parent to child. (because parent is always
-  //    created before the child)
-  // 2. A component's user watchers are run before its render watcher (because
+  //    created before the child) 组件的更新由父到子; 因为父组件的创建过程是先于子的, 所以 watcher 的创建也是先父后子, 执行的顺序也应该保持先父后子
+  // 2. A component's user watchers are run before its render watcher (because 用户定义 watcher 要优先于渲染 watcher 执行; 因为用户定义的 watcher 是在渲染 watcher 之前创建的
   //    user watchers are created before the render watcher)
   // 3. If a component is destroyed during a parent component's watcher run,
-  //    its watchers can be skipped.
+  //    its watchers can be skipped. // 如果一个组件在父组件的 watcher 执行期间被销毁, name它对应的 watcher 执行都可以被跳过, 所以父组件的 watcher 应该先执行
   queue.sort((a, b) => a.id - b.id)
 
   // do not cache length because more watchers might be pushed
   // as we run existing watchers
+  // 遍历 watcher 队列, 执行 watcher.run
   for (index = 0; index < queue.length; index++) {
     watcher = queue[index]
     if (watcher.before) {
@@ -92,7 +93,7 @@ function flushSchedulerQueue () {
     }
     id = watcher.id
     has[id] = null
-    watcher.run()
+    watcher.run() // flushing == true
     // in dev build, check and stop circular updates.
     if (process.env.NODE_ENV !== 'production' && has[id] != null) {
       circular[id] = (circular[id] || 0) + 1
@@ -114,7 +115,7 @@ function flushSchedulerQueue () {
   const activatedQueue = activatedChildren.slice()
   const updatedQueue = queue.slice()
 
-  resetSchedulerState()
+  resetSchedulerState() // 状态恢复
 
   // call component updated and activated hooks
   callActivatedHooks(activatedQueue)
@@ -163,21 +164,24 @@ function callActivatedHooks (queue) {
  */
 export function queueWatcher (watcher: Watcher) {
   const id = watcher.id
-  if (has[id] == null) {
+  if (has[id] == null) { // 同一 watcher 只添加一次
     has[id] = true
     if (!flushing) {
-      queue.push(watcher)
+      queue.push(watcher) // 入队
     } else {
       // if already flushing, splice the watcher based on its id
       // if already past its id, it will be run next immediately.
+      // 从后往前找
       let i = queue.length - 1
+      // 直到找到 queue 中第一个 queue[i].id 小于 watcher.id 的位置, 跳出循环
       while (i > index && queue[i].id > watcher.id) {
         i--
       }
+      // 找到的位置的后一位
       queue.splice(i + 1, 0, watcher)
     }
-    // queue the flush
-    if (!waiting) {
+    // queue the flush 刷新队列
+    if (!waiting) { // 只有一次
       waiting = true
 
       if (process.env.NODE_ENV !== 'production' && !config.async) {

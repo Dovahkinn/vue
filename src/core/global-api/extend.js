@@ -39,7 +39,7 @@ export function initExtend (Vue: GlobalAPI) {
     Sub.cid = cid++
     Sub.options = mergeOptions(
       Super.options,
-      extendOptions
+      extendOptions // 组件对象
     )
     Sub['super'] = Super
 
@@ -84,7 +84,7 @@ export function initExtend (Vue: GlobalAPI) {
 function initProps (Comp) {
   const props = Comp.options.props
   for (const key in props) {
-    proxy(Comp.prototype, `_props`, key)
+    proxy(Comp.prototype, `_props`, key) // 非根组件的代理
   }
 }
 

@@ -11,7 +11,7 @@ let uid = 0
  * directives subscribing to it.
  */
 export default class Dep {
-  static target: ?Watcher;
+  static target: ?Watcher; // 全局唯一的 watcher
   id: number;
   subs: Array<Watcher>;
 
@@ -43,6 +43,7 @@ export default class Dep {
       // order
       subs.sort((a, b) => a.id - b.id)
     }
+    // 遍历所有 watchers, 执行 update
     for (let i = 0, l = subs.length; i < l; i++) {
       subs[i].update()
     }

@@ -102,7 +102,7 @@ export function nextTick (cb?: Function, ctx?: Object) {
     timerFunc()
   }
   // $flow-disable-line
-  if (!cb && typeof Promise !== 'undefined') {
+  if (!cb && typeof Promise !== 'undefined') { // nextTick() 不传参数是, 提供一个 Promise 调用
     return new Promise(resolve => {
       _resolve = resolve
     })

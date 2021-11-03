@@ -124,9 +124,9 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // call the last hook...
     vm._isDestroyed = true
     // invoke destroy hooks on current rendered tree
-    vm.__patch__(vm._vnode, null)
+    vm.__patch__(vm._vnode, null) // 执行 patch, 触发子组件的销毁 -- 递归
     // fire destroyed hook
-    callHook(vm, 'destroyed')
+    callHook(vm, 'destroyed') // 先子后父
     // turn off all instance listeners.
     vm.$off()
     // remove __vue__ reference
@@ -214,7 +214,7 @@ export function mountComponent (
 
   // manually mounted instance, call mounted on self
   // mounted is called for render-created child components in its inserted hook
-  if (vm.$vnode == null) {
+  if (vm.$vnode == null) { // $vnode 表示父节点
     vm._isMounted = true
     callHook(vm, 'mounted')
   }
@@ -273,12 +273,12 @@ export function updateChildComponent (
   // update props
   if (propsData && vm.$options.props) {
     toggleObserving(false)
-    const props = vm._props
-    const propKeys = vm.$options._propKeys || []
+    const props = vm._props // 子组件的 props 值
+    const propKeys = vm.$options._propKeys || [] // initProps 缓存的子组件定义的所有 prop key
     for (let i = 0; i < propKeys.length; i++) {
       const key = propKeys[i]
       const propOptions: any = vm.$options.props // wtf flow?
-      props[key] = validateProp(key, propOptions, propsData, vm)
+      props[key] = validateProp(key, propOptions, propsData, vm) // 重新验证数据, 更新 vm._props 触发 prop 的 setter
     }
     toggleObserving(true)
     // keep a copy of raw propsData
@@ -346,14 +346,14 @@ export function deactivateChildComponent (vm: Component, direct?: boolean) {
 export function callHook (vm: Component, hook: string) {
   // #7573 disable dep collection when invoking lifecycle hooks
   pushTarget()
-  const handlers = vm.$options[hook]
+  const handlers = vm.$options[hook] // 取对应的回调数组
   const info = `${hook} hook`
-  if (handlers) {
+  if (handlers) { // 遍历执行声明周期回调
     for (let i = 0, j = handlers.length; i < j; i++) {
       invokeWithErrorHandling(handlers[i], vm, null, vm, info)
     }
   }
-  if (vm._hasHookEvent) {
+  if (vm._hasHookEvent) { // 监听了声明周期, 如 @hook:mounted
     vm.$emit('hook:' + hook)
   }
   popTarget()

@@ -37,10 +37,29 @@ export function initMixin (Vue: Class<Component>) {
       initInternalComponent(vm, options)
     } else {
       vm.$options = mergeOptions(
-        resolveConstructorOptions(vm.constructor),
+        resolveConstructorOptions(vm.constructor), // 构造器的初始选项
         options || {},
         vm
       )
+
+      // 合并后:
+      // vm.$options = {
+      //   components: { },
+      //   created: [
+      //     function created() {
+      //       console.log('parent created')
+      //     }
+      //   ],
+      //   directives: { },
+      //   filters: { },
+      //   _base: function Vue(options) {
+      //     // ...
+      //   },
+      //   el: "#app",
+      //   render: function (h) {
+      //     //...
+      //   }
+      // }
     }
     /* istanbul ignore else */
     if (process.env.NODE_ENV !== 'production') {
@@ -52,10 +71,10 @@ export function initMixin (Vue: Class<Component>) {
     vm._self = vm
     initLifecycle(vm) // 初始化生命周期
     initEvents(vm) // 初始化事件中心
-    initRender(vm) // 初始化渲染
+    initRender(vm) // 初始化渲染 $slots, $scopedSlots
     callHook(vm, 'beforeCreate') // 调用钩子
     initInjections(vm) // resolve injections before data/props
-    initState(vm) // 初始化 data, props, computed, watcher 等等
+    initState(vm) // 初始化 props, methods, data, computed, watcher 等等
     initProvide(vm) // resolve provide after data/props
     callHook(vm, 'created')
 
@@ -89,6 +108,42 @@ export function initInternalComponent (vm: Component, options: InternalComponent
     opts.render = options.render
     opts.staticRenderFns = options.staticRenderFns
   }
+
+  // 合并后:
+  // vm.$options = {
+  //   parent: Vue /*父Vue实例*/,
+  //   propsData: undefined,
+  //   _componentTag: undefined,
+  //   _parentVnode: VNode /*父VNode实例*/,
+  //   _renderChildren:undefined,
+  //   __proto__: {
+  //     components: { },
+  //     directives: { },
+  //     filters: { },
+  //     _base: function Vue(options) {
+  //         //...
+  //     },
+  //     _Ctor: {},
+  //     created: [
+  //       function created() {
+  //         console.log('parent created')
+  //       }, function created() {
+  //         console.log('child created')
+  //       }
+  //     ],
+  //     mounted: [
+  //       function mounted() {
+  //         console.log('child mounted')
+  //       }
+  //     ],
+  //     data() {
+  //        return {
+  //          msg: 'Hello Vue'
+  //        }
+  //     },
+  //     template: '<div>{{msg}}</div>'
+  //   }
+  // }
 }
 
 export function resolveConstructorOptions (Ctor: Class<Component>) {

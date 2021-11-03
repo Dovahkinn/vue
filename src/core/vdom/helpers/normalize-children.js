@@ -36,7 +36,7 @@ export function simpleNormalizeChildren (children: any) {
 // 1. render 是用户手写的
 // 2. 编译 slot, v-for 的时候产生嵌套数组的情况
 export function normalizeChildren (children: any): ?Array<VNode> {
-  return isPrimitive(children) // children 只有一个节点
+  return isPrimitive(children) // children 只有一个节点 -- 用户手写的 createElement() 函数, children 可以是单个节点
     ? [createTextVNode(children)]
     : Array.isArray(children)
       ? normalizeArrayChildren(children)

@@ -127,3 +127,179 @@ Vue.prototype._update -> vm.__patch__ -> patch -> createElm
 - src/core/vdom/patch.js patch -> createElm -> createComponent -> vnode.data.hook.init
 - src/core/vdom/create-component.js componentVNodeHooks.init -> createComponentInstanceForVnode(vnode, activeInstance) -> new vnode.componentOptions.Ctor
 - src/core/instance/init.js _init -> initInternalComponent -> vm.$mount
+
+
+### 合并配置
+
+1. 外部调用
+- src/core/global-api/index.js initGlobalAPI
+> Vue.options.components = {}
+  Vue.options.directives = {}
+  Vue.options.filters = {}
+  Vue.options._base = Vue
+
+- src/core/util/options.js mergeOptions 
+
+2. 组件场景
+- src/core/instance/init.js - 合并配置
+> 声明周期函数被合并为数组添加到 options
+
+3. beforeCreate & created
+- src/core/instance/init.js
+> initLifecycle - initEvents - initRender -- beforeCreate -- 
+> initInjection - initState -initProvide -- created
+
+4. beforeMount & mounted
+- src/core/instance/lifecycle.js
+> $mount() -> beforeMount -> vm._render -> vm._update -> mounted
+
+5. beforeUpdate & updated
+- src/core/instance/lifecycle.js Watcher
+> watcher.before -> beforeUpdate
+> src/core/observer/scheduler.js - flushSchedulerQueue -> updated
+
+6. beforeDestroy & destroyed
+
+- src/core/instance/lifecycle.js $destroy -> beforeDestroy -> 删除自身, 删除 watcher, 执行 VNode 的销毁钩子 -> destroyed
+
+### 组件注册
+- src/core/global-api/assets.js - Vue.component
+- src/core/vdom/create-element.js - _createElement 
+- src/core/util/options.js - resolveAsset
+> id -> camelized -> Pascal
+
+### 异步组件
+> 3 种异步组件的实现方式，高级异步组件的实现是非常巧妙的，它实现了 loading、resolve、reject、timeout 4 种状态。
+> 异步组件实现的本质是 2 次渲染，除了 0 delay 的高级异步组件第一次直接渲染成 loading 组件外，其它都是第一次渲染生成一个注释节点，
+> 当异步获取组件成功后，再通过 forceRender 强制重新渲染，这样就能正确渲染出我们异步加载的组件了。
+
+1. 普通工厂函数
+Vue.component('async-component', function(resolve, reject) {
+    // 这个特殊的 require 语法告诉 webpack
+    // 自动将编译后的代码分割成不同的块，
+    // 这些块将通过 Ajax 请求自动下载。
+    // 组件加载完成后, 执行 resolve
+    require(['./async-component'], resolve)
+})
+2. Promise
+Vue.component('async-component', () => import('./component.vue'))
+3. 高级异步组件
+
+const AsyncComponent = () => ({
+    // 要加载的组件, Promise
+    component: import('./component'),
+    // 加载中渲染的组件
+    loading: Loading,
+    // 出错时
+    error: ErrorComp,
+    // 渲染加载中组件前的等待时间
+    delay: 200,
+    // 最长等待时间
+    timeout: 3000,
+})
+
+Vue.component('async-component', AsyncComponent)
+
+- src/core/vdom/create-component.js - createComponent
+- src/core/vdom/helpers/resolve-async-component.js - resolveAsyncComponent createAsyncPlaceholder
+- src/shared/util.js once
+- src/core/instance/lifecycle.js $forceUpdate -- 异步组件加载过程中没有数据变化发生, 需要调用渲染 watcher 的 update, 触发组件的重新渲染
+- createAsyncPlaceholder
+
+# 响应式原理
+> 场景: 修改 data, 模板对应的插值会渲染成新的数据
+1. 传统实现:
+  监听事件 -> 修改数据 -> 修改 DOM
+2. 使用 Vue
+  监听事件 -> 修改数据
+
+* 修改 DOM 要处理的几个问题
+1. 我需要修改哪块的 DOM
+2. 我的修改效率和性能是不是最优的
+3. 我需要对数据每一次的修改都去操作 DOM吗?
+4. 我需要 case by case 去写修改 DOM 的逻辑吗?   
+
+## 响应式对象
+- Object.defineProperty
+
+src/core/instance/state.js - initState // props, methods, data, computed, watch
+src/core/observer/index.js - observe defineReactive
+
+defineReactive 对象上定义一个响应式的属性
+
+getter - 依赖收集
+setter - 派发更新
+
+## 依赖收集
+
+src/core/observer/dep.js - Dep
+
+> mount -> new Watcher(vm, updateComponent) -> watcher.get -> updateComponent -> vm._render -> dep.depend -> Dep.target.addDep -> dep.addSub(this)
+> -> popTarget -> cleanupDeps
+
+## 派发更新 *
+
+> setter -> dep.notify -> watcher.update -> queueWatcher -> flushSchedulerQueue -> watcher.run
+
+## nextTick
+
+src/core/util/next-tick.js
+
+数据的变化到 DOM 的重新渲染是一个异步过程，发生在下一个 tick。这就是我们平时在开发的过程中，比如从服务端接口去获取数据的时候，数据做了修改，如果我们的某些方法去依赖了数据修改后的 DOM 变化，我们就必须在 nextTick 后执行。
+
+## 组件更新
+
+VNode diff:
+1. old != node
+> 创建新节点 -> 更新父占位符节点 -> 删除旧节点
+2. old == node
+> updateChildren
+
+## Props
+src/core/instance/init.js _init -> mergeOptions
+src/core/util/options.js - mergeOptions normalizeProps
+src/core/instance/state.js - initState -> initProps
+src/core/util/props.js -> validateProp assertProp
+### 规范化
+{}/[] -> normalizeProps -> {...}
+
+### 初始化
+> 校验 响应式 代理
+_init -> initState -> initProps -> validateProp -> assertProp -> 定义响应式
+
+### props 更新
+> prop 数据的值在父组件中, 父组件 render 过程中会访问到 prop 数据
+> prop 变化一定触发父组件的重新渲染: -> patch -> patchVnode
+
+src/core/vdom/patch.js - patchVnode
+src/core/vdom/create-component.js prepatch -> updateChildComponent
+src/core/instance/lifecycle.js updateChildComponent -> 更新子组件 props
+
+> 子组件 prop 修改
+> 子组件 prop 对象类型的内部属性修改 
+
+### toggleObserving
+
+- src/core/observer/index.js toggleObserving observe 过程中是否把当前值当做一个 observer 对象
+
+1. initProps
+
+2. validateProp
+
+3. updateChildComponent 
+
+***
+# 编译
+> 模板编译成 render 函数
+
+- Runtime + Compiler 运行时编译
+- Runtime only       vue-loader 预编译
+
+## 编译入口
+
+## parse
+
+## optimize
+
+## codegen
+

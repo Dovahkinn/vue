@@ -57,10 +57,10 @@ export default class Watcher {
     vm._watchers.push(this)
     // options
     if (options) {
-      this.deep = !!options.deep
-      this.user = !!options.user
-      this.lazy = !!options.lazy
-      this.sync = !!options.sync
+      this.deep = !!options.deep // deepWatcher
+      this.user = !!options.user // userWatcher
+      this.lazy = !!options.lazy // computedWatcher
+      this.sync = !!options.sync // syncWatcher 在当前 tick 中执行 watcher 回调
       this.before = options.before
     } else {
       this.deep = this.user = this.lazy = this.sync = false
@@ -69,9 +69,9 @@ export default class Watcher {
     this.id = ++uid // uid for batching
     this.active = true
     this.dirty = this.lazy // for lazy watchers
-    this.deps = []
+    this.deps = [] // watcher 持有的 dep 实例数组
     this.newDeps = []
-    this.depIds = new Set()
+    this.depIds = new Set() // dep ID集合
     this.newDepIds = new Set()
     this.expression = process.env.NODE_ENV !== 'production'
       ? expOrFn.toString()
@@ -91,7 +91,7 @@ export default class Watcher {
         )
       }
     }
-    this.value = this.lazy
+    this.value = this.lazy // 计算属性不会立即求值
       ? undefined
       : this.get()
   }
@@ -100,13 +100,13 @@ export default class Watcher {
    * Evaluate the getter, and re-collect dependencies.
    */
   get () {
-    pushTarget(this)
+    pushTarget(this) // 把当前渲染 watcher 赋值给 Dep.target 并压栈
     let value
     const vm = this.vm
     try {
-      value = this.getter.call(vm, vm)
+      value = this.getter.call(vm, vm) // 调用 watcher 的更新函数 -- new Watcher(vm, updateComponent, noop, options,  ...), 完成依赖收集
     } catch (e) {
-      if (this.user) {
+      if (this.user) { // 用户 watcher, 执行回调函数时, 处理错误
         handleError(e, vm, `getter for watcher "${this.expression}"`)
       } else {
         throw e
@@ -114,11 +114,11 @@ export default class Watcher {
     } finally {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
-      if (this.deep) {
-        traverse(value)
+      if (this.deep) { // 深度监听
+        traverse(value) // 递归访问 value, 触发子项的依赖收集
       }
-      popTarget()
-      this.cleanupDeps()
+      popTarget() // Dep.target 恢复到上一个状态
+      this.cleanupDeps() // 依赖清空
     }
     return value
   }
@@ -128,11 +128,11 @@ export default class Watcher {
    */
   addDep (dep: Dep) {
     const id = dep.id
-    if (!this.newDepIds.has(id)) {
+    if (!this.newDepIds.has(id)) { // 避免重复添加
       this.newDepIds.add(id)
       this.newDeps.push(dep)
       if (!this.depIds.has(id)) {
-        dep.addSub(this)
+        dep.addSub(this) // 把当前 watcher 订阅到这个数据持有的 dep 的 subs 中
       }
     }
   }
@@ -145,7 +145,7 @@ export default class Watcher {
     while (i--) {
       const dep = this.deps[i]
       if (!this.newDepIds.has(dep.id)) {
-        dep.removeSub(this)
+        dep.removeSub(this) // 移除对 dep.subs 数组中 watcher 的订阅
       }
     }
     let tmp = this.depIds
@@ -195,6 +195,7 @@ export default class Watcher {
           const info = `callback for watcher "${this.expression}"`
           invokeWithErrorHandling(this.cb, this.vm, [value, oldValue], this.vm, info)
         } else {
+          // 执行回调, 会传入新值和旧值
           this.cb.call(this.vm, value, oldValue)
         }
       }

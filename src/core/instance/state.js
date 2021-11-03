@@ -70,15 +70,18 @@ function initProps (vm: Component, propsOptions: Object) {
   const keys = vm.$options._propKeys = []
   const isRoot = !vm.$parent
   // root instance props should be converted
-  if (!isRoot) {
+  if (!isRoot) { // 非根实例
     toggleObserving(false)
   }
+  // 遍历定义的 props 配置
   for (const key in propsOptions) {
     keys.push(key)
+    // 校验
     const value = validateProp(key, propsOptions, propsData, vm)
     /* istanbul ignore else */
     if (process.env.NODE_ENV !== 'production') {
       const hyphenatedKey = hyphenate(key)
+      // 开发环境下校验 key 是否是 HTML 的保留属性
       if (isReservedAttribute(hyphenatedKey) ||
           config.isReservedAttr(hyphenatedKey)) {
         warn(
@@ -87,7 +90,7 @@ function initProps (vm: Component, propsOptions: Object) {
         )
       }
       defineReactive(props, key, value, () => {
-        if (!isRoot && !isUpdatingChildComponent) {
+        if (!isRoot && !isUpdatingChildComponent) { // 直接对 prop 赋值, 抛出警告
           warn(
             `Avoid mutating a prop directly since the value will be ` +
             `overwritten whenever the parent component re-renders. ` +
@@ -98,12 +101,12 @@ function initProps (vm: Component, propsOptions: Object) {
         }
       })
     } else {
-      defineReactive(props, key, value)
+      defineReactive(props, key, value) // 变为响应式
     }
     // static props are already proxied on the component's prototype
     // during Vue.extend(). We only need to proxy props defined at
     // instantiation here.
-    if (!(key in vm)) {
+    if (!(key in vm)) { // 把 vm._props.xxx 代理到 vm.xxx
       proxy(vm, `_props`, key)
     }
   }
@@ -145,7 +148,7 @@ function initData (vm: Component) {
         vm
       )
     } else if (!isReserved(key)) {
-      proxy(vm, `_data`, key)
+      proxy(vm, `_data`, key) // 代理 data 中的 key 到实例
     }
   }
   // observe data
@@ -169,12 +172,12 @@ const computedWatcherOptions = { lazy: true }
 
 function initComputed (vm: Component, computed: Object) {
   // $flow-disable-line
-  const watchers = vm._computedWatchers = Object.create(null)
+  const watchers = vm._computedWatchers = Object.create(null) // 空对象
   // computed properties are just getters during SSR
   const isSSR = isServerRendering()
-
+  // 遍历 computed
   for (const key in computed) {
-    const userDef = computed[key]
+    const userDef = computed[key] // 用户定义的计算属性: 函数 或 get 读取器
     const getter = typeof userDef === 'function' ? userDef : userDef.get
     if (process.env.NODE_ENV !== 'production' && getter == null) {
       warn(
@@ -184,21 +187,21 @@ function initComputed (vm: Component, computed: Object) {
     }
 
     if (!isSSR) {
-      // create internal watcher for the computed property.
+      // create internal watcher for the computed property. 为每一个 key 创建 getter 对应的 watcher
       watchers[key] = new Watcher(
         vm,
         getter || noop,
         noop,
-        computedWatcherOptions
+        computedWatcherOptions // lazy: true
       )
     }
 
     // component-defined computed properties are already defined on the
     // component prototype. We only need to define computed properties defined
     // at instantiation here.
-    if (!(key in vm)) {
-      defineComputed(vm, key, userDef)
-    } else if (process.env.NODE_ENV !== 'production') {
+    if (!(key in vm)) { // vm 上不存在 key
+      defineComputed(vm, key, userDef) // 定义计算属性
+    } else if (process.env.NODE_ENV !== 'production') { // key 已经被 data/props/methods 占用
       if (key in vm.$data) {
         warn(`The computed property "${key}" is already defined in data.`, vm)
       } else if (vm.$options.props && key in vm.$options.props) {
@@ -240,7 +243,7 @@ export function defineComputed (
   }
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
-
+// 返回一个函数作为计算属性对应的 getter
 function createComputedGetter (key) {
   return function computedGetter () {
     const watcher = this._computedWatchers && this._computedWatchers[key]
@@ -293,7 +296,7 @@ function initMethods (vm: Component, methods: Object) {
 function initWatch (vm: Component, watch: Object) {
   for (const key in watch) {
     const handler = watch[key]
-    if (Array.isArray(handler)) {
+    if (Array.isArray(handler)) { // 同一个 key 可以有多个 watch
       for (let i = 0; i < handler.length; i++) {
         createWatcher(vm, key, handler[i])
       }
@@ -356,14 +359,14 @@ export function stateMixin (Vue: Class<Component>) {
     }
     options = options || {}
     options.user = true
-    const watcher = new Watcher(vm, expOrFn, cb, options)
-    if (options.immediate) {
+    const watcher = new Watcher(vm, expOrFn, cb, options) // 实例化一个 userWatcher
+    if (options.immediate) { // 立即执行
       const info = `callback for immediate watcher "${watcher.expression}"`
       pushTarget()
       invokeWithErrorHandling(cb, vm, [watcher.value], vm, info)
       popTarget()
     }
-    return function unwatchFn () {
+    return function unwatchFn () { // 返回一个 unwatchFn, 移除这个 watcher
       watcher.teardown()
     }
   }

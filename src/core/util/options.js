@@ -317,7 +317,7 @@ function normalizeProps (options: Object, vm: ?Component) {
       name = camelize(key)
       res[name] = isPlainObject(val)
         ? val
-        : { type: val }
+        : { type: val } // 非对象规范成对象
     }
   } else if (process.env.NODE_ENV !== 'production') {
     warn(
@@ -406,11 +406,12 @@ export function mergeOptions (
   // but only if it is a raw options object that isn't
   // the result of another mergeOptions call.
   // Only merged options has the _base property.
+  // 递归把 extends 和 mixins 合并到 parent 上
   if (!child._base) {
     if (child.extends) {
       parent = mergeOptions(parent, child.extends, vm)
     }
-    if (child.mixins) {
+    if (child.mixins) { // array
       for (let i = 0, l = child.mixins.length; i < l; i++) {
         parent = mergeOptions(parent, child.mixins[i], vm)
       }
@@ -423,11 +424,11 @@ export function mergeOptions (
     mergeField(key)
   }
   for (key in child) {
-    if (!hasOwn(parent, key)) {
+    if (!hasOwn(parent, key)) { // key 不在 parent 上
       mergeField(key)
     }
   }
-  function mergeField (key) {
+  function mergeField (key) { // 调用不同的合并策略
     const strat = strats[key] || defaultStrat
     options[key] = strat(parent[key], child[key], vm, key)
   }
@@ -449,12 +450,12 @@ export function resolveAsset (
   if (typeof id !== 'string') {
     return
   }
-  const assets = options[type]
+  const assets = options[type] // eg: options.components
   // check local registration variations first
   if (hasOwn(assets, id)) return assets[id]
-  const camelizedId = camelize(id)
+  const camelizedId = camelize(id) // 驼峰
   if (hasOwn(assets, camelizedId)) return assets[camelizedId]
-  const PascalCaseId = capitalize(camelizedId)
+  const PascalCaseId = capitalize(camelizedId) // Pascal
   if (hasOwn(assets, PascalCaseId)) return assets[PascalCaseId]
   // fallback to prototype chain
   const res = assets[id] || assets[camelizedId] || assets[PascalCaseId]

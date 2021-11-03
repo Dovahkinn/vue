@@ -52,7 +52,7 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   }
 
   Vue.options = Object.create(null)
-  ASSET_TYPES.forEach(type => {
+  ASSET_TYPES.forEach(type => { // components, filters, directives
     Vue.options[type + 's'] = Object.create(null)
   })
 
@@ -65,5 +65,5 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   initUse(Vue)
   initMixin(Vue)
   initExtend(Vue)
-  initAssetRegisters(Vue)
+  initAssetRegisters(Vue) // 初始化全局注册函数 Vue.component, Vue.directive, Vue.filter
 }

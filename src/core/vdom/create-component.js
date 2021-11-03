@@ -53,11 +53,11 @@ const componentVNodeHooks = {
   },
 
   prepatch (oldVnode: MountedComponentVNode, vnode: MountedComponentVNode) {
-    const options = vnode.componentOptions
+    const options = vnode.componentOptions // 父组件传给子组件的选项
     const child = vnode.componentInstance = oldVnode.componentInstance
     updateChildComponent(
       child,
-      options.propsData, // updated props
+      options.propsData, // updated props 父组件传给子组件的数据
       options.listeners, // updated listeners
       vnode, // new parent vnode
       options.children // new children
@@ -99,7 +99,7 @@ const componentVNodeHooks = {
 const hooksToMerge = Object.keys(componentVNodeHooks)
 
 export function createComponent (
-  Ctor: Class<Component> | Function | Object | void,
+  Ctor: Class<Component> | Function | Object | void, // 可能是组件对象
   data: ?VNodeData,
   context: Component,
   children: ?Array<VNode>,
@@ -125,12 +125,15 @@ export function createComponent (
     return
   }
 
-  // async component
+  // async component Ctor 是一个工厂函数
   let asyncFactory
-  if (isUndef(Ctor.cid)) {
+  if (isUndef(Ctor.cid)) { // undefined
     asyncFactory = Ctor
     Ctor = resolveAsyncComponent(asyncFactory, baseCtor)
-    if (Ctor === undefined) {
+    // 第一次执行 resolveAsyncComponent, 返回 undefined
+    // 执行 forceRender 的时候会触发组件重新渲染, resolveAsyncComponent 再次执行, 返回结果可能是 loading, error, resolved
+    // 进行正常的组件 render, patch 过程
+    if (Ctor === undefined) { 
       // return a placeholder node for async component, which is rendered
       // as a comment node but preserves all the raw information for the node.
       // the information will be used for async server-rendering and hydration.
@@ -155,7 +158,7 @@ export function createComponent (
     transformModel(Ctor.options, data)
   }
 
-  // extract props
+  // extract props 从 data 中提取 propData
   const propsData = extractPropsFromVNodeData(data, Ctor, tag)
 
   // functional component

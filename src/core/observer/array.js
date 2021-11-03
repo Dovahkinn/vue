@@ -37,7 +37,7 @@ methodsToPatch.forEach(function (method) {
         inserted = args.slice(2)
         break
     }
-    if (inserted) ob.observeArray(inserted)
+    if (inserted) ob.observeArray(inserted) // 插入的值变成响应式
     // notify change
     ob.dep.notify()
     return result
