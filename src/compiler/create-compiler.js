@@ -11,7 +11,7 @@ export function createCompilerCreator (baseCompile: Function): Function {
       options?: CompilerOptions
     ): CompiledResult {
       const finalOptions = Object.create(baseOptions)
-      const errors = []
+      const errors = []createCompiler
       const tips = []
 
       let warn = (msg, range, tip) => {
@@ -57,7 +57,7 @@ export function createCompilerCreator (baseCompile: Function): Function {
       }
 
       finalOptions.warn = warn
-
+      // 调用 baseCompile 执行编译  
       const compiled = baseCompile(template.trim(), finalOptions)
       if (process.env.NODE_ENV !== 'production') {
         detectErrors(compiled.ast, warn)

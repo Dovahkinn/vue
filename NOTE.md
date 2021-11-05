@@ -296,10 +296,31 @@ src/core/instance/lifecycle.js updateChildComponent -> 更新子组件 props
 - Runtime only       vue-loader 预编译
 
 ## 编译入口
+src/compiler/to-function.js createCompileToFunctionFn
+src/compiler/create-compiler.js createCompilerCreator
+src/compiler/index.js createCompiler createCompilerCreator
+src/platforms/web/compiler/index.js createCompiler(baseOptions) -> compileToFunctions
+src/platforms/web/entry-runtime-with-compiler.js $mount -> compileToFunctions
+## parse * 
+> 利用正则解析字符串生成抽象语法树
+src/compiler/parser/index.js parse
+src/compiler/parser/html-parser.js parseHTML
+parse 的目标是把 template 模板字符串转换成 AST 树，它是一种用 JavaScript 对象的形式来描述整个模板。那么整个 parse 的过程是利用正则表达式顺序解析模板，当解析到开始标签、闭合标签、文本的时候都会分别执行对应的回调函数，来达到构造 AST 树的目的。
 
-## parse
-
+AST 元素节点总共有 3 种类型，type 为 1 表示是普通元素，为 2 表示是表达式，为 3 表示是纯文本。
 ## optimize
+深度遍历 AST, 检测每一颗子树是不是静态节点, 静态节点生成的 DOM 永远不需要改变
 
 ## codegen
 
+src/core/instance/render.js initRender vm._c
+src/core/instance/render-helpers/index.js installRenderHelpers _l, _v
+
+_c: createElement
+_l: renderList
+_v: createTextNode
+_e: createEmptyNode
+
+src/compiler/to-function.js createFunction
+
+src/compiler/codegen/index.js generate

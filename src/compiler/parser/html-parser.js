@@ -64,7 +64,7 @@ export function parseHTML (html, options) {
     if (!lastTag || !isPlainTextElement(lastTag)) {
       let textEnd = html.indexOf('<')
       if (textEnd === 0) {
-        // Comment:
+        // Comment: 注释节点, 匹配到前进至末尾位置
         if (comment.test(html)) {
           const commentEnd = html.indexOf('-->')
 
@@ -87,7 +87,7 @@ export function parseHTML (html, options) {
           }
         }
 
-        // Doctype:
+        // Doctype: 文档类型节点, 前进自身的长度
         const doctypeMatch = html.match(doctype)
         if (doctypeMatch) {
           advance(doctypeMatch[0].length)
@@ -115,7 +115,7 @@ export function parseHTML (html, options) {
       }
 
       let text, rest, next
-      if (textEnd >= 0) {
+      if (textEnd >= 0) { // 文本
         rest = html.slice(textEnd)
         while (
           !endTag.test(rest) &&
@@ -132,7 +132,7 @@ export function parseHTML (html, options) {
         text = html.substring(0, textEnd)
       }
 
-      if (textEnd < 0) {
+      if (textEnd < 0) { // 解析完毕
         text = html
       }
 
@@ -185,7 +185,7 @@ export function parseHTML (html, options) {
   }
 
   function parseStartTag () {
-    const start = html.match(startTagOpen)
+    const start = html.match(startTagOpen) // 匹配开始标签
     if (start) {
       const match = {
         tagName: start[1],
@@ -194,13 +194,14 @@ export function parseHTML (html, options) {
       }
       advance(start[0].length)
       let end, attr
+      // 循环匹配开始标签中的属性并添加到 match.attrs 中
       while (!(end = html.match(startTagClose)) && (attr = html.match(dynamicArgAttribute) || html.match(attribute))) {
         attr.start = index
         advance(attr[0].length)
         attr.end = index
         match.attrs.push(attr)
       }
-      if (end) {
+      if (end) { // 结束标签
         match.unarySlash = end[1]
         advance(end[0].length)
         match.end = index
@@ -221,7 +222,7 @@ export function parseHTML (html, options) {
         parseEndTag(tagName)
       }
     }
-
+    // 是否是一元标签
     const unary = isUnaryTag(tagName) || !!unarySlash
 
     const l = match.attrs.length
@@ -271,7 +272,7 @@ export function parseHTML (html, options) {
     }
 
     if (pos >= 0) {
-      // Close all the open elements, up the stack
+      // Close all the open elements, up the stack 倒序 stack, 找到第一个和当前 endTag 匹配的元素
       for (let i = stack.length - 1; i >= pos; i--) {
         if (process.env.NODE_ENV !== 'production' &&
           (i > pos || !tagName) &&

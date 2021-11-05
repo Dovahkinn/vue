@@ -22,9 +22,9 @@ export function optimize (root: ?ASTElement, options: CompilerOptions) {
   if (!root) return
   isStaticKey = genStaticKeysCached(options.staticKeys || '')
   isPlatformReservedTag = options.isReservedTag || no
-  // first pass: mark all non-static nodes.
+  // first pass: mark all non-static nodes. 标记静态节点
   markStatic(root)
-  // second pass: mark static roots.
+  // second pass: mark static roots. 标记静态根
   markStaticRoots(root, false)
 }
 
@@ -36,7 +36,7 @@ function genStaticKeys (keys: string): Function {
 }
 
 function markStatic (node: ASTNode) {
-  node.static = isStatic(node)
+  node.static = isStatic(node) // 判断一个 AST 元素节点是否是静态的. 表达式: 非静态; 纯文本: 静态
   if (node.type === 1) {
     // do not make component slot content static. this avoids
     // 1. components not able to mutate slot nodes
@@ -48,14 +48,14 @@ function markStatic (node: ASTNode) {
     ) {
       return
     }
-    for (let i = 0, l = node.children.length; i < l; i++) {
+    for (let i = 0, l = node.children.length; i < l; i++) { // 节点是一个普通元素, 遍历所有的 children
       const child = node.children[i]
       markStatic(child)
-      if (!child.static) {
+      if (!child.static) { // 有子节点不是静态, 父节点的 static 设为 false
         node.static = false
       }
     }
-    if (node.ifConditions) {
+    if (node.ifConditions) { // 遍历, 难倒所有条件的 block
       for (let i = 1, l = node.ifConditions.length; i < l; i++) {
         const block = node.ifConditions[i].block
         markStatic(block)
@@ -68,7 +68,7 @@ function markStatic (node: ASTNode) {
 }
 
 function markStaticRoots (node: ASTNode, isInFor: boolean) {
-  if (node.type === 1) {
+  if (node.type === 1) { // 普通元素
     if (node.static || node.once) {
       node.staticInFor = isInFor
     }
@@ -107,10 +107,10 @@ function isStatic (node: ASTNode): boolean {
   return !!(node.pre || (
     !node.hasBindings && // no dynamic bindings
     !node.if && !node.for && // not v-if or v-for or v-else
-    !isBuiltInTag(node.tag) && // not a built-in
-    isPlatformReservedTag(node.tag) && // not a component
-    !isDirectChildOfTemplateFor(node) &&
-    Object.keys(node).every(isStaticKey)
+    !isBuiltInTag(node.tag) && // not a built-in 非内置组件
+    isPlatformReservedTag(node.tag) && // not a component 平台保留标签
+    !isDirectChildOfTemplateFor(node) && // 非带有v-for 的 template 标签的直接子节点
+    Object.keys(node).every(isStaticKey) //节点的所有属性都满足静态 key
   ))
 }
 

@@ -164,11 +164,11 @@ function genIfConditions (
   }
 
   const condition = conditions.shift()
-  if (condition.exp) {
+  if (condition.exp) { // 通过 conditon.exp 生成一段三目运算符代码
     return `(${condition.exp})?${
       genTernaryExp(condition.block)
     }:${
-      genIfConditions(conditions, state, altGen, altEmpty)
+      genIfConditions(conditions, state, altGen, altEmpty) // 递归, 生成多层三目运算逻辑
     }`
   } else {
     return `${genTernaryExp(condition.block)}`
@@ -217,6 +217,12 @@ export function genFor (
     '})'
 }
 
+/**
+ * @description 构造 createElement 的 data 对象字符串 
+ * @param {*} el 
+ * @param {*} state 
+ * @returns 
+ */
 export function genData (el: ASTElement, state: CodegenState): string {
   let data = '{'
 

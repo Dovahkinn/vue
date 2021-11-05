@@ -78,7 +78,7 @@ export function createASTElement (
  */
 export function parse (
   template: string,
-  options: CompilerOptions
+  options: CompilerOptions // 编译配置, 区分平台
 ): ASTElement | void {
   warn = options.warn || baseWarn
 
@@ -214,7 +214,7 @@ export function parse (
     shouldDecodeNewlinesForHref: options.shouldDecodeNewlinesForHref,
     shouldKeepComment: options.comments,
     outputSourceRange: options.outputSourceRange,
-    start (tag, attrs, unary, start, end) {
+    start (tag, attrs, unary, start, end) { // 处理开始
       // check namespace.
       // inherit parent ns if there is one
       const ns = (currentParent && currentParent.ns) || platformGetTagNamespace(tag)
@@ -224,7 +224,7 @@ export function parse (
       if (isIE && ns === 'svg') {
         attrs = guardIESVGBug(attrs)
       }
-
+      // 创建 AST
       let element: ASTElement = createASTElement(tag, attrs, currentParent)
       if (ns) {
         element.ns = ns
@@ -252,7 +252,7 @@ export function parse (
           }
         })
       }
-
+      // 处理 AST 元素
       if (isForbiddenTag(element) && !isServerRendering()) {
         element.forbidden = true
         process.env.NODE_ENV !== 'production' && warn(
@@ -267,7 +267,7 @@ export function parse (
       for (let i = 0; i < preTransforms.length; i++) {
         element = preTransforms[i](element, options) || element
       }
-
+      // 处理指令
       if (!inVPre) {
         processPre(element)
         if (element.pre) {
@@ -285,7 +285,7 @@ export function parse (
         processIf(element)
         processOnce(element)
       }
-
+      // AST 树管理
       if (!root) {
         root = element
         if (process.env.NODE_ENV !== 'production') {
@@ -312,7 +312,7 @@ export function parse (
       closeElement(element)
     },
 
-    chars (text: string, start: number, end: number) {
+    chars (text: string, start: number, end: number) { // 处理文本内容
       if (!currentParent) {
         if (process.env.NODE_ENV !== 'production') {
           if (text === template) {
@@ -363,14 +363,14 @@ export function parse (
         let child: ?ASTNode
         if (!inVPre && text !== ' ' && (res = parseText(text, delimiters))) {
           child = {
-            type: 2,
+            type: 2, // 有表达式的
             expression: res.expression,
             tokens: res.tokens,
             text
           }
         } else if (text !== ' ' || !children.length || children[children.length - 1].text !== ' ') {
           child = {
-            type: 3,
+            type: 3, // 纯文本
             text
           }
         }
