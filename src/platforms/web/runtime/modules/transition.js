@@ -28,7 +28,7 @@ export function enter (vnode: VNodeWithData, toggleDisplay: ?() => void) {
     el._leaveCb.cancelled = true
     el._leaveCb()
   }
-
+  // 解析过渡数据
   const data = resolveTransition(vnode.data.transition)
   if (isUndef(data)) {
     return
@@ -58,11 +58,12 @@ export function enter (vnode: VNodeWithData, toggleDisplay: ?() => void) {
     appearCancelled,
     duration
   } = data
-
+  // 处理边界情况
   // activeInstance will always be the <transition> component managing this
   // transition. One edge case to check is when the <transition> is placed
   // as the root node of a child component. In that case we need to check
   // <transition>'s parent for appear check.
+  // 这是为了处理当 transition 作为子组件的根节点, 需要检查他的父组件作为 appear 的检查
   let context = activeInstance
   let transitionNode = activeInstance.$vnode
   while (transitionNode && transitionNode.parent) {
@@ -70,35 +71,40 @@ export function enter (vnode: VNodeWithData, toggleDisplay: ?() => void) {
     transitionNode = transitionNode.parent
   }
 
-  const isAppear = !context._isMounted || !vnode.isRootInsert
+  const isAppear = !context._isMounted || !vnode.isRootInsert // 当前上下文还没有 mounted, 第一次出现的时机.
 
-  if (isAppear && !appear && appear !== '') {
+  if (isAppear && !appear && appear !== '') { // 第一次且没有配置 appear, 直接返回
     return
   }
-
+  // * 定义过渡类名, 钩子函数和其他配置
+  // 定义进入过渡的开始状态, 在元素被插入时生效, 在下一帧被移除;
   const startClass = isAppear && appearClass
     ? appearClass
     : enterClass
+  // 定义过渡的状态, 在元素整个过渡过程中作用, 在元素被插入时生效, 在 transition/animation 完成后移除  
   const activeClass = isAppear && appearActiveClass
     ? appearActiveClass
     : enterActiveClass
+  // 定义进入过渡的结束状态, 在元素被插入一帧后生效(与此同时 startClass 被删除), 在 transition/animation 完成之后移除  
   const toClass = isAppear && appearToClass
     ? appearToClass
     : enterToClass
-
+  // 过渡开始之前执行的钩子函数
   const beforeEnterHook = isAppear
     ? (beforeAppear || beforeEnter)
     : beforeEnter
+  // 在元素插入后或者 v-show 显示切换后执行的钩子函数  
   const enterHook = isAppear
     ? (typeof appear === 'function' ? appear : enter)
     : enter
+  // 过渡动画执行完后的钩子函数  
   const afterEnterHook = isAppear
     ? (afterAppear || afterEnter)
     : afterEnter
   const enterCancelledHook = isAppear
     ? (appearCancelled || enterCancelled)
     : enterCancelled
-
+  // 表示 enter 动画执行的时间
   const explicitEnterDuration: any = toNumber(
     isObject(duration)
       ? duration.enter
@@ -108,16 +114,16 @@ export function enter (vnode: VNodeWithData, toggleDisplay: ?() => void) {
   if (process.env.NODE_ENV !== 'production' && explicitEnterDuration != null) {
     checkDuration(explicitEnterDuration, 'enter', vnode)
   }
-
+  // 过渡动画受 css 的影响
   const expectsCSS = css !== false && !isIE9
   const userWantsControl = getHookArgumentsLength(enterHook)
-
+  // 过渡完成后执行的回调函数
   const cb = el._enterCb = once(() => {
     if (expectsCSS) {
       removeTransitionClass(el, toClass)
       removeTransitionClass(el, activeClass)
     }
-    if (cb.cancelled) {
+    if (cb.cancelled) { // 如果取消
       if (expectsCSS) {
         removeTransitionClass(el, startClass)
       }
@@ -130,6 +136,7 @@ export function enter (vnode: VNodeWithData, toggleDisplay: ?() => void) {
 
   if (!vnode.data.show) {
     // remove pending leave element on enter by injecting an insert hook
+    // src/core/vdom/helpers/merge-hook.js
     mergeVNodeHook(vnode, 'insert', () => {
       const parent = el.parentNode
       const pendingNode = parent && parent._pending && parent._pending[vnode.key]
@@ -143,19 +150,21 @@ export function enter (vnode: VNodeWithData, toggleDisplay: ?() => void) {
     })
   }
 
-  // start enter transition
+  // start enter transition 开始执行过渡动画
   beforeEnterHook && beforeEnterHook(el)
-  if (expectsCSS) {
+  if (expectsCSS) { // 希望使用 css 来控制动画
+    // 给元素添加 class
     addTransitionClass(el, startClass)
     addTransitionClass(el, activeClass)
+    // 下一帧执行
     nextFrame(() => {
-      removeTransitionClass(el, startClass)
-      if (!cb.cancelled) {
+      removeTransitionClass(el, startClass) // 移除 startClass
+      if (!cb.cancelled) { // 过渡没有被取消
         addTransitionClass(el, toClass)
-        if (!userWantsControl) {
-          if (isValidDuration(explicitEnterDuration)) {
+        if (!userWantsControl) { // 用户不通过 enterHook 钩子函数控制动画
+          if (isValidDuration(explicitEnterDuration)) { // 用户指定了 explictEnterDuration
             setTimeout(cb, explicitEnterDuration)
-          } else {
+          } else { // 否则利用过渡动画的结束事件来决定 cb 函数的执行
             whenTransitionEnds(el, type, cb)
           }
         }
@@ -191,7 +200,7 @@ export function leave (vnode: VNodeWithData, rm: Function) {
   if (isDef(el._leaveCb)) {
     return
   }
-
+  // 解析出 leave 相关的样式类名和钩子函数
   const {
     css,
     type,
@@ -202,7 +211,7 @@ export function leave (vnode: VNodeWithData, rm: Function) {
     leave,
     afterLeave,
     leaveCancelled,
-    delayLeave,
+    delayLeave, // 可以掩饰执行 leave 的相关过渡动画, 在 leave 动画执行完后, 他会执行 rm 函数把节点从 DOM 中真正做移除
     duration
   } = data
 

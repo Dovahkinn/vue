@@ -310,9 +310,10 @@ parse 的目标是把 template 模板字符串转换成 AST 树，它是一种�
 AST 元素节点总共有 3 种类型，type 为 1 表示是普通元素，为 2 表示是表达式，为 3 表示是纯文本。
 ## optimize
 深度遍历 AST, 检测每一颗子树是不是静态节点, 静态节点生成的 DOM 永远不需要改变
+- src/compiler/optimizer.js optimize: 1. 标记静态节点 2. 标记静态根
 
 ## codegen
-
+将优化后的 AST 转换成和执行的代码
 src/core/instance/render.js initRender vm._c
 src/core/instance/render-helpers/index.js installRenderHelpers _l, _v
 
@@ -324,3 +325,145 @@ _e: createEmptyNode
 src/compiler/to-function.js createFunction
 
 src/compiler/codegen/index.js generate
+
+# event
+
+## parse
+- src/compiler/parser/index.js processAttrs -[v-on]-> addHandler
+- src/compiler/helpers.js addHandler -> codegen
+- src/compiler/codegen/index.js genData -> genHandlers
+- src/compiler/codegen/events.js genHandlers
+
+## DOM 事件
+- src/platforms/web/runtime/modules/events.js: updateDOMListeners -> updateListeners
+- src/core/vdom/helpers/update-listeners.js updateListerners -> add
+- src/platforms/web/runtime/modules/events.js add
+
+## 自定义事件
+
+-src/core/vdom/create-component.js createComponent
+-src/core/instance/init.js initInternalComponent 子组件初始化, 收到父组件传入的 listeners
+- src/core/instance/events.js initEvents 处理 vm.$options._parentListeners -> updateComponentListeners
+事件中心: $on, $off...
+
+# v-model
+
+- parse: -> el.diretives
+- codegen: getData
+-> src/compiler/codegen/index.js: getDirectives
+- state.directives[dir.name]
+- src/platforms/web/compiler/directives/index.js: directives
+- src/platforms/web/compiler/directives/model.js modal
+
+```js
+with(this) {
+  return _c('div',[_c('input',{
+    directives:[{
+      name:"model",
+      rawName:"v-model",
+      value:(message),
+      expression:"message"
+    }],
+    attrs:{"placeholder":"edit me"},
+    domProps:{"value":(message)},
+    on:{"input":function($event){
+      if($event.target.composing)
+        return;
+      message=$event.target.value
+    }}}),_c('p',[_v("Message is: "+_s(message))])
+    ])
+}
+```
+
+自定义组件中可以配置 prop 名称, 以及派发的事件名称
+
+# slot
+## 普通插槽
+父组件编辑和渲染阶段生成 VNode, 数据的作用域是父组件实例, 子组件渲染的时候直接拿到这些渲染好的 VNode
+parse:
+- src/compiler/parser/index.js: processSlotContent
+codegen:
+- src/compiler/codegen/index.js genData 给 data 添加一个 slot 属性
+```js
+with(this){
+  return _c('div',
+    [_c('app-layout',
+      [_c('h1',{attrs:{"slot":"header"},slot:"header"},
+         [_v(_s(title))]),
+       _c('p',[_v(_s(msg))]),
+       _c('p',{attrs:{"slot":"footer"},slot:"footer"},
+         [_v(_s(desc))]
+         )
+       ])
+     ],
+   1)}
+```
+- genSlot -> renderSlot
+- 子组件 initRender -> resolvSlots => vm.$slots
+父组件应用到子组件插槽里的数据都是绑定到父组件的, slot 的 VNode 的上下文是父组件的实例
+
+## 作用域插槽
+
+src/compiler/parser/index.js processSlotContent
+src/compiler/codegen/index.js genScopedSlots genScopedSlot
+src/core/instance/render-helpers/resolve-scoped-slots.js resolveScopedSlots
+编辑
+genSlot -> _t -- renderSlot
+
+父组件在编译和渲染阶段不会生成 VNode, 而是在父节点的 VNode 的 data 中保留一个 scopedSlots 对象, 存储着不同名称的插槽以及他们对应的
+渲染函数. 只有在编译和渲染子组件阶段才会执行这个渲染函数生成 VNode, 由于是在子组件中执行的, 所以对应的数据作用域是子组件实例.
+
+两种插槽的目的都是让子组件 slot 占位符生成的内容有父组件决定, 但数据的作用域会根据他们 VNode 渲染时机不同而不同
+
+# keep-alive
+- src/core/components/keep-alive.js
+- render
+- watch
+- include
+- exclude
+
+## 首次渲染
+- patch -> initComponent
+
+## 缓存渲染
+<keep-alive> -> prepatch -> updateChildComponent -> $forceUpdate -> keepAlive.render -> cachedVnode -> patch -> reactiveComponent -> insert(parentElm, vnode.elm, refElm)
+
+## 生命周期
+组件被 keep-alive, 再次渲染不再执行 created, mounted 等钩子函数.
+- invokeInsertHook(vnode, insertedVnodeQueue, isInitialPatch)
+- activateChildComponent -> callHook(vm, 'activated')
+- src/core/observer/scheduler.js queueActivatedComponent 
+
+- destroy -> deactivateChildComponent -> deactiveChildComponent -> callHook(vm, 'deactivated')
+
+# transition
+<transition> 是 web 平台特有的
+- src/platforms/web/runtime/components/transition.js
+
+## transition-module
+- src/platforms/web/runtime/modules/transition.js
+- entering: enter 主要发生在组件插入后
+- leaving: leave 主要发生在组件销毁前
+
+总结起来，Vue 的过渡实现分为以下几个步骤：
+
+自动嗅探目标元素是否应用了 CSS 过渡或动画，如果是，在恰当的时机添加/删除 CSS 类名。
+
+如果过渡组件提供了 JavaScript 钩子函数，这些钩子函数将在恰当的时机被调用。
+
+如果没有找到 JavaScript 钩子并且也没有检测到 CSS 过渡/动画，DOM 操作 (插入/删除) 在下一帧中立即执行。
+
+所以真正执行动画的是我们写的 CSS 或者是 JavaScript 钩子函数，而 Vue 的 <transition> 只是帮我们很好地管理了这些 CSS 的添加/删除，以及钩子函数的执行时机。
+
+# transiton-group
+列表过渡
+- src/platforms/web/runtime/components/transition-group.js
+## render 函数生成 vnode. -- 插入和删除的元素的缓存动画是可以实现的
+
+## move 过渡
+新增数据 -> render + updated
+
+## beforeMount
+设置 __path__() 的 removeOnly = true, updateChildren 阶段不移动 vnode 节点
+## 总结
+和 <transition> 组件相比，实现了列表的过渡，以及它会渲染成真实的元素。当我们去修改列表的数据的时候，如果是添加或者删除数据，则会触发相应元素本身的过渡动画，这点和 <transition> 组件实现效果一样，除此之外 <transtion-group> 还实现了 move 的过渡效果，让我们的列表过渡动画更加丰富。

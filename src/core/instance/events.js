@@ -71,7 +71,7 @@ export function eventsMixin (Vue: Class<Component>) {
   Vue.prototype.$once = function (event: string, fn: Function): Component {
     const vm: Component = this
     function on () {
-      vm.$off(event, on)
+      vm.$off(event, on) // 执行一次后, 移除监听
       fn.apply(vm, arguments)
     }
     on.fn = fn

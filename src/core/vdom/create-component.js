@@ -168,7 +168,7 @@ export function createComponent (
 
   // extract listeners, since these needs to be treated as
   // child component listeners instead of DOM listeners
-  const listeners = data.on
+  const listeners = data.on  // 处理环境是子组件
   // replace with listeners with .native modifier
   // so it gets processed during parent component patch.
   data.on = data.nativeOn
@@ -252,6 +252,7 @@ function mergeHook (f1: any, f2: any): Function {
 
 // transform component v-model info (value and callback) into
 // prop and event handler respectively.
+// 给 data.props 添加 data.model.value, 给 data.on 添加 data.model.callback
 function transformModel (options, data: any) {
   const prop = (options.model && options.model.prop) || 'value'
   const event = (options.model && options.model.event) || 'input'

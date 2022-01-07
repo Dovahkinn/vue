@@ -464,7 +464,7 @@ function genScopedSlot (
     }}`
   // reverse proxy v-slot without scope on this.$slots
   const reverseProxy = slotScope ? `` : `,proxy:true`
-  return `{key:${el.slotTarget || `"default"`},fn:${fn}${reverseProxy}}`
+  return `{key:${el.slotTarget || `"default"`},fn:${fn}${reverseProxy}}` // key: 插槽名称, fn: 生成的函数代码
 }
 
 export function genChildren (
@@ -553,7 +553,7 @@ export function genComment (comment: ASTText): string {
 function genSlot (el: ASTElement, state: CodegenState): string {
   const slotName = el.slotName || '"default"'
   const children = genChildren(el, state)
-  let res = `_t(${slotName}${children ? `,function(){return ${children}}` : ''}`
+  let res = `_t(${slotName}${children ? `,function(){return ${children}}` : ''}` // _t == renderSlot
   const attrs = el.attrs || el.dynamicAttrs
     ? genProps((el.attrs || []).concat(el.dynamicAttrs || []).map(attr => ({
         // slot props are camelized

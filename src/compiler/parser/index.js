@@ -80,6 +80,8 @@ export function parse (
   template: string,
   options: CompilerOptions // 编译配置, 区分平台
 ): ASTElement | void {
+
+  // ! 从 options 中获取方法和配置
   warn = options.warn || baseWarn
 
   platformIsPreTag = options.isPreTag || no
@@ -97,6 +99,7 @@ export function parse (
   postTransforms = pluckModuleFunction(options.modules, 'postTransformNode')
 
   delimiters = options.delimiters
+  // ! ----- $
 
   const stack = []
   const preserveWhitespace = options.preserveWhitespace !== false
@@ -204,7 +207,7 @@ export function parse (
       )
     }
   }
-
+  // ! 将模板字符串解析成 AST 树
   parseHTML(template, {
     warn,
     expectHTML: options.expectHTML,
@@ -630,7 +633,7 @@ function processSlotContent (el) {
     el.slotScope = slotScope
   }
 
-  // slot="xxx"
+  // slot="xxx" 标签上有 slot 属性, 给对应的 AST 添加  slotTarget 属性
   const slotTarget = getBindingAttr(el, 'slot')
   if (slotTarget) {
     el.slotTarget = slotTarget === '""' ? '"default"' : slotTarget
@@ -765,11 +768,11 @@ function processAttrs (el) {
   for (i = 0, l = list.length; i < l; i++) {
     name = rawName = list[i].name
     value = list[i].value
-    if (dirRE.test(name)) {
+    if (dirRE.test(name)) { // 如果是指令
       // mark element as dynamic
       el.hasBindings = true
       // modifiers
-      modifiers = parseModifiers(name.replace(dirRE, ''))
+      modifiers = parseModifiers(name.replace(dirRE, '')) // 解析出修饰符
       // support .foo shorthand syntax for the .prop modifier
       if (process.env.VBIND_PROP_SHORTHAND && propBindRE.test(name)) {
         (modifiers || (modifiers = {})).prop = true
@@ -845,7 +848,7 @@ function processAttrs (el) {
         } else {
           addAttr(el, name, value, list[i], isDynamic)
         }
-      } else if (onRE.test(name)) { // v-on
+      } else if (onRE.test(name)) { // v-on 事件的指令
         name = name.replace(onRE, '')
         isDynamic = dynamicArgRE.test(name)
         if (isDynamic) {

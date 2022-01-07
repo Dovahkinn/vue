@@ -86,6 +86,7 @@ export default {
   abstract: true,
 
   render (h: Function) {
+    // * 处理 children
     let children: any = this.$slots.default
     if (!children) {
       return
@@ -98,7 +99,7 @@ export default {
       return
     }
 
-    // warn multiple elements
+    // warn multiple elements transition 只能包裹一个子节点
     if (process.env.NODE_ENV !== 'production' && children.length > 1) {
       warn(
         '<transition> can only be used on a single element. Use ' +
@@ -106,7 +107,7 @@ export default {
         this.$parent
       )
     }
-
+    // * 处理 mode, 只有两种 'in-out' 'out-in'
     const mode: string = this.mode
 
     // warn invalid mode
@@ -118,18 +119,19 @@ export default {
         this.$parent
       )
     }
-
-    const rawChild: VNode = children[0]
+    // * 处理 rawChild child
+    const rawChild: VNode = children[0] // 第一个子节点 VNode
 
     // if this is a component root node and the component's
     // parent container node also has transition, skip.
+    // 如果是组件的根节点, 而且外面包裹该组件的容器也是 transition, 跳过
     if (hasParentTransition(this.$vnode)) {
       return rawChild
     }
 
     // apply transition data to child
     // use getRealChild() to ignore abstract components e.g. keep-alive
-    const child: ?VNode = getRealChild(rawChild)
+    const child: ?VNode = getRealChild(rawChild) // 获取组件的非抽象子节点, 递归找到第一个非抽象组价的 VNode 并返回
     /* istanbul ignore if */
     if (!child) {
       return rawChild
@@ -138,7 +140,7 @@ export default {
     if (this._leaving) {
       return placeholder(h, rawChild)
     }
-
+    // * 处理 id & data
     // ensure a key that is unique to the vnode type and to this transition
     // component instance. This key will be used to remove pending leaving nodes
     // during entering.
@@ -150,7 +152,7 @@ export default {
       : isPrimitive(child.key)
         ? (String(child.key).indexOf(id) === 0 ? child.key : id + child.key)
         : child.key
-
+    // 提取过渡所需要的的数据
     const data: Object = (child.data || (child.data = {})).transition = extractTransitionData(this)
     const oldRawChild: VNode = this._vnode
     const oldChild: VNode = getRealChild(oldRawChild)

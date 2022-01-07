@@ -48,7 +48,7 @@ function pruneCacheEntry (
 ) {
   const entry: ?CacheEntry = cache[key]
   if (entry && (!current || entry.tag !== current.tag)) { // 要删除的组件的 tag 不是当前渲染组件
-    entry.componentInstance.$destroy()
+    entry.componentInstance.$destroy() // 执行删除缓存的组件的 $destroy()
   }
   cache[key] = null
   remove(keys, key)
@@ -58,7 +58,7 @@ const patternTypes: Array<Function> = [String, RegExp, Array]
 
 export default {
   name: 'keep-alive',
-  abstract: true,
+  abstract: true, // 组件实例建立父子关系时会被忽略 -- initLifecyle
 
   props: {
     include: patternTypes,
@@ -87,6 +87,7 @@ export default {
   },
 
   created () {
+    // 缓存创建过的 VNode
     this.cache = Object.create(null)
     this.keys = []
   },
@@ -99,6 +100,7 @@ export default {
 
   mounted () {
     this.cacheVNode()
+    // 观察 include exclude, 删除与新规则不匹配的缓存
     this.$watch('include', val => {
       pruneCache(this, name => matches(val, name))
     })
@@ -117,7 +119,7 @@ export default {
     const componentOptions: ?VNodeComponentOptions = vnode && vnode.componentOptions
     if (componentOptions) {
       // check pattern
-      const name: ?string = getComponentName(componentOptions)
+      const name: ?string = getComponentName(componentOptions) // 当前组件名
       const { include, exclude } = this
       if (
         // not included
@@ -125,7 +127,7 @@ export default {
         // excluded
         (exclude && name && matches(exclude, name))
       ) {
-        return vnode
+        return vnode // 配置 include 且不匹配或者匹配 exclude, 直接返回
       }
       // 缓存  
       const { cache, keys } = this

@@ -33,9 +33,9 @@ export default function model (
       )
     }
   }
-
+  // 根据不同的元素节点, 执行不同的逻辑
   if (el.component) {
-    genComponentModel(el, value, modifiers)
+    genComponentModel(el, value, modifiers) // 组件
     // component v-model doesn't need extra runtime
     return false
   } else if (tag === 'select') {
@@ -146,7 +146,7 @@ function genDefaultModel (
     }
   }
 
-  const { lazy, number, trim } = modifiers || {}
+  const { lazy, number, trim } = modifiers || {} // 修饰符
   const needCompositionGuard = !lazy && type !== 'range'
   const event = lazy
     ? 'change'
@@ -162,13 +162,13 @@ function genDefaultModel (
     valueExpression = `_n(${valueExpression})`
   }
 
-  let code = genAssignmentCode(value, valueExpression)
+  let code = genAssignmentCode(value, valueExpression) // 生成代码 eg: message = $event.target.value
   if (needCompositionGuard) {
     code = `if($event.target.composing)return;${code}`
   }
 
-  addProp(el, 'value', `(${value})`)
-  addHandler(el, event, code, null, true)
+  addProp(el, 'value', `(${value})`) // 添加一个 value 属性
+  addHandler(el, event, code, null, true) // 绑定事件， 动态修改目标值
   if (trim || number) {
     addHandler(el, 'blur', '$forceUpdate()')
   }

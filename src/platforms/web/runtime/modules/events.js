@@ -81,7 +81,7 @@ function add (
       }
     }
   }
-  target.addEventListener(
+  target.addEventListener( // 原生方法
     name,
     handler,
     supportsPassive
@@ -107,11 +107,11 @@ function updateDOMListeners (oldVnode: VNodeWithData, vnode: VNodeWithData) {
   if (isUndef(oldVnode.data.on) && isUndef(vnode.data.on)) {
     return
   }
-  const on = vnode.data.on || {}
+  const on = vnode.data.on || {} // 事件对象
   const oldOn = oldVnode.data.on || {}
   // vnode is empty when removing all listeners,
   // and use old vnode dom element
-  target = vnode.elm || oldVnode.elm
+  target = vnode.elm || oldVnode.elm // 当前 VNode 对应的 DOM
   normalizeEvents(on)
   updateListeners(on, oldOn, add, remove, createOnceHandler, vnode.context)
   target = undefined

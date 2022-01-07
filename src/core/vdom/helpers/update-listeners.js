@@ -59,10 +59,10 @@ export function updateListeners (
   vm: Component
 ) {
   let name, def, cur, old, event
-  for (name in on) {
+  for (name in on) { // 遍历 on 添加事件监听
     def = cur = on[name]
     old = oldOn[name]
-    event = normalizeEvent(name)
+    event = normalizeEvent(name) // 处理事件名
     /* istanbul ignore if */
     if (__WEEX__ && isPlainObject(def)) {
       cur = def.handler
@@ -75,18 +75,18 @@ export function updateListeners (
       )
     } else if (isUndef(old)) {
       if (isUndef(cur.fns)) {
-        cur = on[name] = createFnInvoker(cur, vm)
+        cur = on[name] = createFnInvoker(cur, vm) // 创建一个回调函数
       }
       if (isTrue(event.once)) {
         cur = on[name] = createOnceHandler(event.name, cur, event.capture)
       }
-      add(event.name, cur, event.capture, event.passive, event.params)
+      add(event.name, cur, event.capture, event.passive, event.params) // 完成事件绑定
     } else if (cur !== old) {
-      old.fns = cur
+      old.fns = cur // 事件只绑定一次, 直接修改回调函数
       on[name] = old
     }
   }
-  for (name in oldOn) {
+  for (name in oldOn) { // 遍历 oldOn 移除事件监听
     if (isUndef(on[name])) {
       event = normalizeEvent(name)
       remove(event.name, oldOn[name], event.capture)

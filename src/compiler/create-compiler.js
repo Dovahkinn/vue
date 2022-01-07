@@ -69,7 +69,7 @@ export function createCompilerCreator (baseCompile: Function): Function {
 
     return {
       compile,
-      compileToFunctions: createCompileToFunctionFn(compile)
+      compileToFunctions: createCompileToFunctionFn(compile) // $mount => compileToFunctions
     }
   }
 }
